@@ -41,7 +41,7 @@ exports.login = async (req, res) => {
     console.log(user_instance);
 
     if (!user_instance) {
-      return res.status(400).json({ message: 'Invalid username or password' });
+      return res.status(200).json({ message: 'Invalid username or password' });
     }
     console.log(".............",password,user_instance.password);
     const isMatch = await bcrypt.compare(password, user_instance.password);
@@ -49,7 +49,7 @@ exports.login = async (req, res) => {
 
 
     if (!isMatch) {
-      return res.status(400).json({ message: 'incorrect password' });
+      return res.status(200).json({ message: 'incorrect password' });
     }
     console.log("else sic.....");
     req.session.user = user_instance.user_name;

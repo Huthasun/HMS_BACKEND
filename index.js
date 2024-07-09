@@ -183,7 +183,7 @@ mongoose
   .connect("mongodb+srv://saikiranautomac:jXGLmMQ7RKuO00uP@cluster0.qssqx4c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
   .then(() => {
     console.log("Connected to database!");
-    app.listen(80, 'hms.automactechonoligies.in' , () => {
+    app.listen(80, '0.0.0.0' , () => {
       console.log("Server is running on port 80");
     });
   })
@@ -197,7 +197,3 @@ mongoose
 app.get("*",(req,res)=>{
   res.sendFile(path.resolve(path.resolve('./build/index.html')))
 })
-
-
-
-// recconect?

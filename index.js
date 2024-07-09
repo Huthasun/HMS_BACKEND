@@ -167,10 +167,10 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false } 
 }));
-
+ 
 // Routes
-app.use("/hms", customerRoutes);
-app.use("/hms", userRoute); 
+app.use("http://hms.automactechonoligies.in", customerRoutes);
+app.use("http://hms.automactechonoligies.in", userRoute); 
 
 // app.get("/", (req, res) => {
 //   res.send("Hello from Node API Server Updated");
@@ -183,7 +183,7 @@ mongoose
   .connect("mongodb+srv://saikiranautomac:jXGLmMQ7RKuO00uP@cluster0.qssqx4c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
   .then(() => {
     console.log("Connected to database!");
-    app.listen(80, '0.0.0.0', () => {
+    app.listen(80, '0.0.0.0' , () => {
       console.log("Server is running on port 80");
     });
   })
@@ -197,3 +197,7 @@ mongoose
 app.get("*",(req,res)=>{
   res.sendFile(path.resolve(path.resolve('./build/index.html')))
 })
+
+
+
+// recconect?

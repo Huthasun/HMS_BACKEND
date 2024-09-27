@@ -348,7 +348,9 @@ exports.createBooking = async (req, res) => {
       hotelId: hotelId,
       duration: null,
       modeOfPayment: req.body.modeOfPayment,
-      guestDetails: guestDetailsArray
+      numOfDays: req.body.duration,
+      guestDetails: guestDetailsArray,
+     
     };
 
     console.log('Booking Data:', bookingData);

@@ -3,22 +3,27 @@ const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 // Define the Room schema
 const roomSchema = new mongoose.Schema({
-  roomNo: {
+  roomId: { // Auto-incrementing ID
     type: Number,
+    unique: true,
     required: true
   },
+  roomNo: {
+    type: Number,
+    required: true,
+    unique: true // Ensure room numbers are unique
+  },
   roomType: {
-    type: String, // using String for roomType, similar to varchar
+    type: String, // Using String for roomType
     required: true,
     default: null
   },
   price: {
-    type: Number, // price as an integer
+    type: Number, // Price as a number
     required: true
-
   },
   hotelId: {
-    type: Number,
+    type: Number, // This should match the type used in your Hotel schema
     required: true,
     ref: 'Hotel' // Reference to Hotel schema
   }

@@ -128,6 +128,10 @@ const bookingDetailsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  numOfDays: {
+    type: Number, // Stores the number of days for the booking
+    required: true,
+  },
   duration: {
     type: String,
     default: null,

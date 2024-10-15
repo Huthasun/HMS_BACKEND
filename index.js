@@ -200,8 +200,8 @@ mongoose
   .connect("mongodb+srv://saikiranautomac:jXGLmMQ7RKuO00uP@cluster0.qssqx4c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
   .then(() => {
     console.log("Connected to database!");
-    app.listen(8000,'localhost', () => {
-      console.log("Server is running on port 80");
+    app.listen(3000,'localhost', () => {
+      console.log("Server is running on port 3000");
     });
   })
   .catch((error) => {

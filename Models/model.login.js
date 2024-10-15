@@ -37,8 +37,15 @@ const userSchema = new Schema({
   password: {
     type: String,
     required: true
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],  // Role can be 'user' or 'admin'
+    default: 'user'           // Default role is 'user'
   }
 });
+
+
 
 // Pre-save hook to hash the password
 userSchema.pre('save', async function(next) {

@@ -56,7 +56,7 @@ exports.login = async (req, res) => {
     console.log("User instance found:", user_instance);
     console.log("Session user------------------:", req.session.user);
 
-    res.status(200).json({ "status": "user validated", "username":username  });
+    res.status(200).json({ "status": "user validated", "username":username,role: user_instance.role  });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -80,7 +80,7 @@ exports.logout = (req, res) => {
   }
 };
 exports.register = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password,role } = req.body;
 
   try {
     const existingUser = await HMS_Models.findOne({ user_name: username });
@@ -90,7 +90,8 @@ exports.register = async (req, res) => {
 
     const newUser = new HMS_Models({
       user_name: username,
-      password: password // Password will be hashed by pre-save hook
+      password: password, // Password will be hashed by pre-save hook
+      role: role || 'user'  // Default role is 'user' if not provided
     });
 
     await newUser.save();
@@ -101,7 +102,8 @@ exports.register = async (req, res) => {
     res.status(201).json({
       message: 'User registered successfully',
       sessionId: req.session.id,
-      user: req.session.user
+      user: req.session.user,
+      role: newUser.role  // Include the role in the response
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -165,7 +165,7 @@ app.use(cookieParser());
 
 // Define CORS options
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://192.168.29.68:3000"],
+  origin: ["http://localhost:3000", "http://192.168.1.9:3000"],
   credentials: true,
 };
 
@@ -200,7 +200,7 @@ mongoose
   .connect("mongodb+srv://saikiranautomac:jXGLmMQ7RKuO00uP@cluster0.qssqx4c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
   .then(() => {
     console.log("Connected to database!");
-    app.listen(80, '0.0.0.0', () => {
+    app.listen(8000,'localhost', () => {
       console.log("Server is running on port 80");
     });
   })

@@ -402,22 +402,37 @@ exports.createBooking = async (req, res) => {
 }; 
 exports.getAllBookingGuests = async (req, res) => {
   try {
-    // Fetch all booking details and populate the related primary guest data
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const startIndex = (page - 1) * limit;
+
+    const totalBookings = await BookingDetails.countDocuments();
     const bookGuests = await BookingDetails.find()
+      .skip(startIndex)
+      .limit(limit)
       .populate({
-        path: 'primaryGuest_Id', // Assuming this field references the Guest model
-        select: 'name guestIdNumber' // Fetches only the primaryGuest fields name and guestIdNumber
+        path: 'primaryGuest_Id',
+        select: 'name guestIdNumber phoneNumber',
       });
 
-    // Map through bookings to include primary guest's name and guestIdNumber in the response
+    if (bookGuests.length === 0) {
+      return res.status(404).json({ message: 'No booking guests found' });
+    }
+
     const formattedGuests = bookGuests.map(booking => ({
-      ...booking._doc, // Include all other booking data
-      primaryGuestName: booking.primaryGuest_Id.name,
-      primaryGuestIdNumber: booking.primaryGuest_Id.guestIdNumber
+      ...booking._doc,
+      primaryGuestName: booking.primaryGuest_Id?.name,
+      primaryGuestIdNumber: booking.primaryGuest_Id?.guestIdNumber,
+      primaryGuestPhoneNumber: booking.primaryGuest_Id?.phoneNumber,
     }));
 
-    // Send the formatted bookings with primary guest info included
-    res.status(200).json(formattedGuests);
+    res.status(200).json({
+      page,
+      limit,
+      totalBookings,
+      totalPages: Math.ceil(totalBookings / limit),
+      data: formattedGuests,
+    });
   } catch (error) {
     console.error('Error fetching booking guests:', error);
     res.status(500).json({ error: 'Internal server error' });

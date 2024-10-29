@@ -84,6 +84,7 @@ exports.getAllGuests = async (req, res) => {
   
       // Fetch the records from the database with pagination
       const guests = await Guest.find()
+        .sort({ createdAt: -1 }) // Change this to the appropriate field
         .skip(startIndex)
         .limit(limit);
   
@@ -106,3 +107,4 @@ exports.getAllGuests = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+  

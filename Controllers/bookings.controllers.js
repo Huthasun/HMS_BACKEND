@@ -305,7 +305,7 @@ exports.createBooking = async (req, res) => {
     console.error('Error processing guest details:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
-
+ 
   try {
     const roomNo = Number(req.body.roomNo);
     console.log("roomNo type:", typeof(roomNo));
@@ -407,24 +407,27 @@ exports.getAllBookingGuests = async (req, res) => {
     const startIndex = (page - 1) * limit;
 
     const totalBookings = await BookingDetails.countDocuments();
-    const bookGuests = await BookingDetails.find()
+    const bookings = await BookingDetails.find()
+      .sort({ createdAt: -1 }) // Change this to the appropriate field
       .skip(startIndex)
       .limit(limit)
-      .populate({
-        path: 'primaryGuest_Id',
-        select: 'name guestIdNumber phoneNumber',
-      });
-
-    if (bookGuests.length === 0) {
-      return res.status(404).json({ message: 'No booking guests found' });
-    }
-
-    const formattedGuests = bookGuests.map(booking => ({
-      ...booking._doc,
-      primaryGuestName: booking.primaryGuest_Id?.name,
-      primaryGuestIdNumber: booking.primaryGuest_Id?.guestIdNumber,
-      primaryGuestPhoneNumber: booking.primaryGuest_Id?.phoneNumber,
-    }));
+      if (bookings.length === 0) {
+        return res.status(404).json({ message: 'No booking guests found' });
+      }
+  
+      // Fetch primary guest details manually based on the primaryGuest_Id
+      const formattedGuests = await Promise.all(
+        bookings.map(async (booking) => {
+          const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
+           
+          return {
+            ...booking._doc, // Spread booking details
+            primaryGuestName: primaryGuest ? primaryGuest.name : null,
+            primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
+            primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
+          };
+        })
+      );
 
     res.status(200).json({
       page,
@@ -435,6 +438,52 @@ exports.getAllBookingGuests = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching booking guests:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+exports.searchLatestBookingDetails = async (req, res) => {
+  try {
+    const { phoneNumber, guestIdNumber, name } = req.query;
+
+    // const guest = await Guest.findOne({ phoneNumber });
+    let guest;
+    
+    if (phoneNumber) {
+      guest = await Guest.findOne({ phoneNumber });
+    } else if (guestIdNumber) {
+      guest = await Guest.findOne({ guestIdNumber });
+    } else if (name) {
+      guest = await Guest.findOne({ name: new RegExp(name, 'i') }); // Case-insensitive name search
+    }
+
+    if (!guest) {
+      return res.status(404).json({ message: 'No bookings found with the given criteria.' });
+    }
+
+    const latestBooking = await BookingDetails.findOne({ primaryGuest_Id: guest.primaryGuest_Id })
+      .sort({ createdAt: -1 }) 
+      .populate('primaryGuest_Id', 'name phoneNumber guestIdNumber');
+
+    if (!latestBooking) {
+      return res.status(404).json({ message: 'No bookings found for the given guest.' });
+    }
+
+    const primaryGuestDetails = {
+      name: guest.name,
+      phoneNumber: guest.phoneNumber,
+      guestIdNumber: guest.guestIdNumber,
+      gender: guest.gender,
+      address:guest.address
+    };
+
+    const bookingDetails = {
+      noOfDays: latestBooking.numOfDays,
+      totalPayment: latestBooking.totalAmount,
+    };
+
+    res.status(200).json({ primaryGuestDetails, bookingDetails });
+  } catch (error) {
+    console.error('Error fetching latest booking details:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

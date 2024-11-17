@@ -350,6 +350,7 @@ exports.createBooking = async (req, res) => {
       modeOfPayment: req.body.modeOfPayment,
       numOfDays: req.body.duration,
       guestDetails: guestDetailsArray,
+      pmytotalAmount: Number(req.body.totalamount)
      
     };
 
@@ -419,12 +420,14 @@ exports.getAllBookingGuests = async (req, res) => {
       const formattedGuests = await Promise.all(
         bookings.map(async (booking) => {
           const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
+          const room = await Room.findOne({ roomId: booking.roomId });
            
           return {
             ...booking._doc, // Spread booking details
             primaryGuestName: primaryGuest ? primaryGuest.name : null,
             primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
             primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
+            roomNo: room ? room.roomNo : null
           };
         })
       );
@@ -485,6 +488,20 @@ exports.searchLatestBookingDetails = async (req, res) => {
   } catch (error) {
     console.error('Error fetching latest booking details:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+exports.deleteBookingGuest = async (req, res) => {
+  try {
+      const { bookingId } = req.params;
+      // Ensure to use the correct MongoDB identifier
+      const deletedGuest = await BookingDetails.findOneAndDelete({ bookingId }); // Change to findOneAndDelete if needed
+      if (!deletedGuest) {
+          return res.status(404).json({ message: 'Guest not found' });
+      }
+      res.status(200).json({ message: 'Guest deleted successfully' });
+  } catch (error) {
+      console.error('Error deleting guest:', error);
+      res.status(500).json({ error: 'Internal server error' });
   }
 };
 

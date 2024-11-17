@@ -156,6 +156,10 @@ const bookingDetailsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  pmytotalAmount: {
+    type: Number,
+    required:true,
+  }
 });
 
 // Apply auto-increment plugin to bookingId

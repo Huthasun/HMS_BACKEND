@@ -262,7 +262,6 @@
 //     }
 //   };
   
-
 const BookingDetails = require('../Models/bookingDetailsModel');
 const Room = require('../Models/roomsModel');
 const RoomStatus = require('../Models/roomStatusModel');
@@ -285,19 +284,15 @@ exports.createBooking = async (req, res) => {
       address: req.body.primaryGuestDetails.address
     };
 
-    // Check if the phone number already exists in the database
     const existingGuest = await Guest.findOne({ phoneNumber: primaryGuestDetails.phoneNumber });
 
     if (existingGuest) {
-      // Guest already exists, retrieve the primaryGuest_Id
       primaryGuest_Id = existingGuest.primaryGuest_Id;
       console.log('Guest already exists. Primary Guest ID:', primaryGuest_Id);
     } else {
-      // Guest doesn't exist, so create a new guest
       const newGuest = new Guest(primaryGuestDetails);
       const savedPrimaryGuest = await newGuest.save();
 
-      // Retrieve the primaryGuest_Id after saving the new guest
       primaryGuest_Id = savedPrimaryGuest.primaryGuest_Id;
       console.log('Guest saved successfully. New Primary Guest ID:', primaryGuest_Id);
     }
@@ -305,7 +300,7 @@ exports.createBooking = async (req, res) => {
     console.error('Error processing guest details:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
- 
+
   try {
     const roomNo = Number(req.body.roomNo);
     console.log("roomNo type:", typeof(roomNo));
@@ -313,22 +308,20 @@ exports.createBooking = async (req, res) => {
     const room = await Room.findOne({ roomNo });
     console.log("Room found:", room);
 
-    // If room is not found, return an error
     if (!room) {
       return res.status(404).json({ message: 'Room not found. Please ensure the room is registered.' });
     }
 
-    // Extract roomId from the found room
     const roomId = room.roomId;
     const hotelId = room.hotelId;
 
-    // Validate and format guest details
     const guestDetailsArray = Array.isArray(req.body.guestDetails)
       ? req.body.guestDetails.map(guest => ({
           name: guest.guestName,
           gender: guest.gender,
           guestIdType: guest.guestIdProof,
-          guestIdNumber: guest.guestIdNumber
+          guestIdNumber: guest.guestIdNumber,
+          phoneNumber:guest.phoneNumber
         }))
       : [];
 
@@ -342,7 +335,7 @@ exports.createBooking = async (req, res) => {
       checkInDateTime: req.body.checkInDateTime,
       paidAmount: Number(req.body.paidamount),
       balance: Number(req.body.balanceamount),
-      totalAmount: Number(req.body.tarrif),
+      tarrif: Number(req.body.tarrif),
       bookingStatus: "Open",
       roomId: roomId,
       hotelId: hotelId,
@@ -351,34 +344,31 @@ exports.createBooking = async (req, res) => {
       numOfDays: req.body.duration,
       guestDetails: guestDetailsArray,
       pmytotalAmount: Number(req.body.totalamount)
-     
     };
 
     console.log('Booking Data:', bookingData);
 
-    // Save the booking
     const booking = new BookingDetails(bookingData);
     const savedBooking = await booking.save();
 
-    // Update room status after booking is successfully saved
     await RoomStatus.findOneAndUpdate(
       { roomId: roomId },
       {
         $set: {
           roomStatus: 'occupied',
           bookingId: savedBooking.bookingId, // Update with saved booking ID
-          primaryGuestName: req.body.primaryGuestDetails.name, // Update with primary guest ID
-          totalAmount: req.body.tarrif, // Update total amount
+          primaryGuestName: req.body.primaryGuestDetails.name, // Update with primary guest name
+          tarrif: req.body.tarrif, // Update total amount
           paidAmount: req.body.paidamount, // Update paid amount
           balanceAmount: req.body.balanceamount || null, // Update balance amount, set to null if not provided
           checkoutDuration: null, // Set to null as per requirements
-          CheckOutDateTime: req.body.checkOutDateTime
+          CheckOutDateTime: req.body.checkOutDateTime,
+          pmytotalAmount: req.body.pmytotalAmount
         },
       },
       { new: true } // Option to return the updated document
     );
 
-    // Send success response
     res.status(201).json({
       message: 'Booking created successfully',
       bookingId: savedBooking._id,
@@ -400,63 +390,62 @@ exports.createBooking = async (req, res) => {
       });
     }
   }
-}; 
+};
 exports.getAllBookingGuests = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 100;
-    const startIndex = (page - 1) * limit;
+  // const { page = 1, limit = 10 } = req.query;  // Get pagination params from query (default to page 1 and 10 items per page)
 
-    const totalBookings = await BookingDetails.countDocuments();
+  try {
     const bookings = await BookingDetails.find()
-      .sort({ createdAt: -1 }) // Change this to the appropriate field
-      .skip(startIndex)
-      .limit(limit)
-      if (bookings.length === 0) {
-        return res.status(404).json({ message: 'No booking guests found' });
-      }
-  
-      // Fetch primary guest details manually based on the primaryGuest_Id
-      const formattedGuests = await Promise.all(
-        bookings.map(async (booking) => {
-          const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
-          const room = await Room.findOne({ roomId: booking.roomId });
-           
-          return {
-            ...booking._doc, // Spread booking details
-            primaryGuestName: primaryGuest ? primaryGuest.name : null,
-            primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
-            primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
-            roomNo: room ? room.roomNo : null
-          };
-        })
-      );
+      // .sort({ createdAt: -1 })  // Sorting by the creation date in descending order
+      // .skip((page - 1) * limit)  // Skip the records for the previous pages
+      // .limit(Number(limit));  // Limit the number of records per page
+
+    if (bookings.length === 0) {
+      return res.status(404).json({ message: 'No booking guests found' });
+    }
+
+    const formattedGuests = await Promise.all(
+      bookings.map(async (booking) => {
+        const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
+        const room = await Room.findOne({ roomId: booking.roomId });
+
+        return {
+          ...booking._doc,
+          primaryGuestName: primaryGuest ? primaryGuest.name : null,
+          primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
+          primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
+          roomNo: room ? room.roomNo : null
+        };
+      })
+    );
+
+    // Get the total count of bookings for pagination
+    const totalCount = await BookingDetails.countDocuments();
 
     res.status(200).json({
-      page,
-      limit,
-      totalBookings,
-      totalPages: Math.ceil(totalBookings / limit),
       data: formattedGuests,
+      // totalPages: Math.ceil(totalCount / limit),
+      // currentPage: page,
+      // totalCount
     });
   } catch (error) {
     console.error('Error fetching booking guests:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 exports.searchLatestBookingDetails = async (req, res) => {
   try {
     const { phoneNumber, guestIdNumber, name } = req.query;
 
-    // const guest = await Guest.findOne({ phoneNumber });
     let guest;
-    
+
     if (phoneNumber) {
       guest = await Guest.findOne({ phoneNumber });
     } else if (guestIdNumber) {
       guest = await Guest.findOne({ guestIdNumber });
     } else if (name) {
-      guest = await Guest.findOne({ name: new RegExp(name, 'i') }); // Case-insensitive name search
+      guest = await Guest.findOne({ name: new RegExp(name, 'i') });
     }
 
     if (!guest) {
@@ -464,7 +453,7 @@ exports.searchLatestBookingDetails = async (req, res) => {
     }
 
     const latestBooking = await BookingDetails.findOne({ primaryGuest_Id: guest.primaryGuest_Id })
-      .sort({ createdAt: -1 }) 
+      .sort({ createdAt: -1 })
       .populate('primaryGuest_Id', 'name phoneNumber guestIdNumber');
 
     if (!latestBooking) {
@@ -476,12 +465,12 @@ exports.searchLatestBookingDetails = async (req, res) => {
       phoneNumber: guest.phoneNumber,
       guestIdNumber: guest.guestIdNumber,
       gender: guest.gender,
-      address:guest.address
+      address: guest.address
     };
 
     const bookingDetails = {
       noOfDays: latestBooking.numOfDays,
-      totalPayment: latestBooking.totalAmount,
+      tarrif: latestBooking.tarrif,
     };
 
     res.status(200).json({ primaryGuestDetails, bookingDetails });
@@ -490,21 +479,65 @@ exports.searchLatestBookingDetails = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 exports.deleteBookingGuest = async (req, res) => {
   try {
-      const { bookingId } = req.params;
-      // Ensure to use the correct MongoDB identifier
-      const deletedGuest = await BookingDetails.findOneAndDelete({ bookingId }); // Change to findOneAndDelete if needed
-      if (!deletedGuest) {
-          return res.status(404).json({ message: 'Guest not found' });
-      }
-      res.status(200).json({ message: 'Guest deleted successfully' });
+    const { bookingId } = req.params;
+    const deletedGuest = await BookingDetails.findOneAndDelete({ bookingId });
+    
+    if (!deletedGuest) {
+      return res.status(404).json({ message: 'Guest not found' });
+    }
+    
+    res.status(200).json({ message: 'Guest deleted successfully' });
   } catch (error) {
-      console.error('Error deleting guest:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('Error deleting guest:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
+exports.updateBookingDetails = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const updateData = req.body;
+
+    const booking = await BookingDetails.findOne({ bookingId });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (updateData.roomId && updateData.roomStatus) {
+      const roomStatusUpdate = await RoomStatus.findOneAndUpdate(
+        { roomId: updateData.roomId },
+        { $set: { roomStatus: updateData.roomStatus } },
+        { new: true } 
+      );
+
+      if (!roomStatusUpdate) {
+        return res.status(404).json({ message: 'Room status update failed. Room not found.' });
+      }
+    }
+
+    const updatedBooking = await BookingDetails.findOneAndUpdate(
+      { bookingId },
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (updateData.primaryGuestDetails) {
+      await Guest.findOneAndUpdate(
+        { primaryGuest_Id: booking.primaryGuest_Id },
+        { $set: updateData.primaryGuestDetails },
+        { new: true }
+      );
+    }
+
+    res.status(200).json({ message: 'Booking details updated successfully', updatedBooking });
+  } catch (error) {
+    console.error('Error updating booking details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 //   try {
 //     // Extract data from request body
 //     r = Number(req.body.roomNo)

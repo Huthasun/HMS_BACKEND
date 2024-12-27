@@ -87,7 +87,7 @@ const roomStatusSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  totalAmount: {
+  tarrif: {
     type: String,
     default: null
   },
@@ -106,6 +106,10 @@ const roomStatusSchema = new mongoose.Schema({
   CheckOutDateTime:{
     type:Date,
     default:null,
+  },
+  pmytotalAmount:{
+    type: String,
+    default: null
   }
 });
 

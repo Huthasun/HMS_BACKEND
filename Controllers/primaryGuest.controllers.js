@@ -72,41 +72,22 @@ exports.createPrimaryGuest = async (req, res) => {
 //       res.status(500).json({ error: 'Internal server error' });
 //     }
 //   };
-
 exports.getAllGuests = async (req, res) => {
     try {
-      // Get page and limit from query parameters, set defaults if not provided
-      const page = parseInt(req.query.page) || 1; // Default to page 1
-      const limit = parseInt(req.query.limit) || 100; // Default to 100 records per page
-      
-      // Calculate the starting index of the records for the current page
-      const startIndex = (page - 1) * limit;
+      const guests = await Guest.find();
   
-      // Fetch the records from the database with pagination
-      const guests = await Guest.find()
-        .sort({ createdAt: -1 }) // Change this to the appropriate field
-        .skip(startIndex)
-        .limit(limit);
-  
-      // Get the total number of records
-      const totalGuests = await Guest.countDocuments();
-
       if (guests.length === 0) {
         return res.status(404).json({ message: 'No guests found' });
       }
   
-      // Send paginated response
-      res.status(200).json({
-        page,
-        limit,
-        totalGuests,
-        totalPages: Math.ceil(totalGuests / limit),
-        data: guests,
-      });
+      res.status(200).json({ data: guests });
     } catch (error) {
+      console.error('Error fetching guests:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
-  }; 
+  };
+  
+
   exports.deleteGuest = async (req, res) => {
     try {
         const { primaryGuest_Id } = req.params;

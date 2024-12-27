@@ -100,13 +100,44 @@ const Room = require('../Models/roomsModel');
 const Hotel = require('../Models/hotelsModel');
 const BookingDetails = require('../Models/bookingDetailsModel');
 const PrimaryGuest = require('../Models/primaryGuestModel'); 
-// Fetch all room statuses
+// Fetch all room statuses with booking details and primary guest details
 exports.getAllRoomStatus = async (req, res) => {
   try {
+    // Fetch all room statuses
     const rooms = await RoomStatus.find();
-    res.status(200).json({ message: 'Rooms fetched successfully', data: rooms });
+
+    // Populate room data with booking details and primary guest details
+    const detailedRooms = await Promise.all(
+      rooms.map(async (room) => {
+        const roomDetails = { ...room._doc }; // Clone room object for modification
+
+        // Fetch booking details if bookingId is available
+        if (room.bookingId) {
+          const bookingDetails = await BookingDetails.findOne({ bookingId: room.bookingId });
+          if (bookingDetails) {
+            roomDetails.bookingDetails = bookingDetails;
+
+            // Fetch primary guest details if primaryGuestId is available in the booking
+            const primaryGuest = await PrimaryGuest.findOne({ guestId: bookingDetails.primaryGuest_Id });
+            if (primaryGuest) {
+              roomDetails.primaryGuest = primaryGuest;
+            }
+          }
+        }
+
+        return roomDetails;
+      })
+    );
+
+    res.status(200).json({
+      message: 'Rooms with detailed information fetched successfully',
+      data: detailedRooms,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching rooms', error: error.message });
+    res.status(500).json({
+      message: 'Error fetching room statuses',
+      error: error.message,
+    });
   }
 };
 
@@ -135,11 +166,12 @@ exports.createRoomStatus = async (req, res) => {
       roomStatus: 'vacant', // Default status
       bookingId: null,
       primaryGuestId: null,
-      totalAmount: null,
+      tarrif: null,
       paidAmount: null,
       balanceAmount: null,
       checkoutDuration: null,
       CheckOutDateTime:null,
+      pmytotalAmount:null
     });
 
 
@@ -180,21 +212,26 @@ exports.updateRoomStatus = async (req, res) => {
     if (status === 'housekeeping') {
       roomStatus.bookingId = null;
       roomStatus.primaryGuestId = null;
-      roomStatus.totalAmount = null;
+      roomStatus.tarrif = null;
       roomStatus.paidAmount = null;
       roomStatus.balanceAmount = null;
       roomStatus.checkoutDuration = null;
       roomStatus.CheckOutDateTime = null;
+      roomStatus.pmytotalAmount  = null;
     }
 
     // Fetch booking details and checkout date/time if bookingId is available
     if (roomStatus.bookingId) {
       const bookingDetails = await BookingDetails.findOne({ bookingId: roomStatus.bookingId });
       if (bookingDetails) {
-      
+        roomStatus.tarrif = bookingDetails.tarrif; 
+        roomStatus.balance = bookingDetails.balance;
+        roomStatus.pmytotalAmount = bookingDetails.pmytotalAmount;
         roomStatus.CheckOutDateTime = bookingDetails.CheckOutDateTime; // Add checkoutDateTime from bookingDetails
 
         console.log("ttttttttt",roomStatus.CheckOutDateTime);
+        console.log("yyyyy",roomStatus.tarrif);
+        
         
       }
 
@@ -234,38 +271,33 @@ const updatedRoomStatus = await roomStatus.save();
     res.status(500).json({ message: 'Error updating room status', error: error.message });
   }
 };
-// Get detailed information of a room by booking ID
-// exports.getRoomDetailsByBookingId = async (req, res) => {
-//   try {
-//     const { bookingId } = req.params;
+exports.updateRoomStatusById = async (req, res) => {
+  try {
+    const { roomStatusId } = req.params; // Extract roomStatusId from URL
+    const updateFields = req.body; // Fields to update are passed in the body
 
-//     // Find the room status record by booking ID
-//     const roomStatus = await RoomStatus.findOne({ bookingId });
-//     if (!roomStatus) {
-//       return res.status(404).json({ message: 'Room status not found for the provided booking ID' });
-//     }
+    // Validate if the record exists
+    const roomStatusRecord = await RoomStatus.findOne({ roomStatusId });
+    if (!roomStatusRecord) {
+      return res.status(404).json({ message: 'Room status record not found.' });
+    }
 
-//     // Fetch booking details
-//     const bookingDetails = await BookingDetails.findOne({ bookingId });
-//     if (!bookingDetails) {
-//       return res.status(404).json({ message: 'Booking details not found' });
-//     }
+    // Update the record with the provided fields
+    Object.keys(updateFields).forEach((field) => {
+      roomStatusRecord[field] = updateFields[field];
+    });
 
-//     // Fetch primary guest details if `primaryGuestId` is available
-//     let primaryGuest = null;
-//     if (roomStatus.primaryGuestId) {
-//       primaryGuest = await PrimaryGuest.findOne({ guestId: roomStatus.primaryGuestId });
-//     }
+    // Save the updated record
+    const updatedRoomStatus = await roomStatusRecord.save();
 
-//     // Combine all details to send to the frontend
-//     const roomDetails = {
-//       roomStatus,
-//       bookingDetails,
-//       primaryGuest
-//     };
-
-//     res.status(200).json({ message: 'Room details fetched successfully', data: roomDetails });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error fetching room details', error: error.message });
-//   }
-// 
+    res.status(200).json({
+      message: 'Room status updated successfully.',
+      data: updatedRoomStatus,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error updating room status.',
+      error: error.message,
+    });
+  }
+};

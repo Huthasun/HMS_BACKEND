@@ -9,4 +9,5 @@ router.post('/create', roomStatusController.createRoomStatus);
 // Update room status
 router.put('/update-status', roomStatusController.updateRoomStatus);
 // router.get('/details/:bookingId', roomStatusController.getRoomDetailsByBookingId);
+router.put('/updateRoomStatus/:roomStatusId', roomStatusController.updateRoomStatusById);
 module.exports = router;

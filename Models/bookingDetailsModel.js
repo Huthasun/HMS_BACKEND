@@ -128,6 +128,11 @@ const bookingDetailsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  bookingId: {
+    type: Number,
+    ref: 'BookingDetails', // Reference to the BookingDetails schema
+    default: null,
+  },
   numOfDays: {
     type: Number, // Stores the number of days for the booking
     required: true,
@@ -152,7 +157,7 @@ const bookingDetailsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  totalAmount: {
+  tarrif: {
     type: Number,
     required: true,
   },

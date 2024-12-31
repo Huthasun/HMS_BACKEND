@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "node index.js"
     
@@ -13,14 +13,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "",
+    "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "mongodb": "^6.7.0",
-    "mongoose": "^8.4.1",
-    "mongoose-auto-increment": "^5.0.1",
+    "mongoose": "",
+    "mongoose-auto-increment": "",
     "mongoose-sequence": "^6.0.1"
   },
   "devDependencies": {

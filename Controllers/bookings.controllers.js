@@ -421,6 +421,8 @@ exports.getAllBookingGuests = async (req, res) => {
 
     // Get the total count of bookings for pagination
     const totalCount = await BookingDetails.countDocuments();
+    console.log(totalCount);
+    
 
     res.status(200).json({
       data: formattedGuests,

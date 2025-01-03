@@ -193,7 +193,7 @@ app.use(express.static(path.resolve('./build')));
 // Fallback for React Router
 app.get("*", (req, res) => {
   res.sendFile(path.resolve('./build/index.html'));
-});
+}); 
 
 // Connect to MongoDB and start the server
 mongoose
@@ -201,7 +201,7 @@ mongoose
   .then(() => {
     console.log("Connected to database!");
     app.listen(3000,'localhost', () => {
-      console.log("Server is running on port 80");
+      console.log("Server is running on port 3000");
     });
   })
   .catch((error) => {

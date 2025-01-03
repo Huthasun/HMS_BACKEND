@@ -434,6 +434,8 @@ exports.getAllBookingGuests = async (req, res) => {
   }
 };
 
+
+
 exports.searchLatestBookingDetails = async (req, res) => {
   try {
     const { phoneNumber, guestIdNumber, name } = req.query;

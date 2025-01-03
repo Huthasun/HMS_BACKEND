@@ -1,7 +1,8 @@
 # dependencies
-/node_modules
+node_modules/
+
 
 
 #package-lock
-.package-lock.json
-.test.js
+package-lock.json
+test.js

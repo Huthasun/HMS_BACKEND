@@ -421,7 +421,7 @@ exports.getAllBookingGuests = async (req, res) => {
 
     // Get the total count of bookings for pagination
     const totalCount = await BookingDetails.countDocuments();
-    console.log(totalCount);
+    // console.log(totalCount);
     
 
     res.status(200).json({
@@ -436,6 +436,59 @@ exports.getAllBookingGuests = async (req, res) => {
   }
 };
 
+
+// exports.getAllBookingGuests = async (req, res) => {
+//   const { startDate, endDate, page = 1, limit = 10 } = req.query;  // Get date range and pagination params
+
+//   try {
+//     // Build the query based on the provided date range
+//     let query = {};
+
+//     if (startDate && endDate) {
+//       query.checkInDateTime = { $gte: new Date(startDate), $lte: new Date(endDate) };
+//     }
+
+//     // Query to find the bookings
+//     const bookings = await BookingDetails.find(query)
+//       .sort({ createdAt: -1 })  // Sorting by the creation date in descending order
+//       .skip((page - 1) * limit)  // Skip the records for the previous pages
+//       .limit(Number(limit));  // Limit the number of records per page
+
+//     // Check if no bookings are found
+//     if (!bookings || bookings.length === 0) {
+//       return res.status(404).json({ message: 'No booking guests found' });
+//     }
+
+//     const formattedGuests = await Promise.all(
+//       bookings.map(async (booking) => {
+//         const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
+//         const room = await Room.findOne({ roomId: booking.roomId });
+
+//         return {
+//           ...booking._doc,
+//           primaryGuestName: primaryGuest ? primaryGuest.name : null,
+//           primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
+//           primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
+//           roomNo: room ? room.roomNo : null
+//         };
+//       })
+//     );
+
+//     // Get the total count of bookings for pagination
+//     const totalCount = await BookingDetails.countDocuments(query);
+//     console.log(totalCount);
+
+//     res.status(200).json({
+//       data: formattedGuests,
+//       totalPages: Math.ceil(totalCount / limit),
+//       currentPage: page,
+//       totalCount
+//     });
+//   } catch (error) {
+//     console.error('Error fetching booking guests:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
 
 
 exports.searchLatestBookingDetails = async (req, res) => {

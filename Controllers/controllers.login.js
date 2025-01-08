@@ -56,7 +56,7 @@ exports.login = async (req, res) => {
     console.log("User instance found:", user_instance);
     console.log("Session user------------------:", req.session.user);
 
-    res.status(200).json({ "status": "user validated", "username":username,role: user_instance.role  });
+    res.status(200).json({ "status": "user_validated", "username":username,role: user_instance.role  });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

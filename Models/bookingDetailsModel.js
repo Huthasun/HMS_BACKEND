@@ -110,6 +110,7 @@ const bookingDetailsSchema = new mongoose.Schema({
       gender: { type: String, required: true },
       guestIdType: { type: String, required: true },
       guestIdNumber: { type: String, required: true },
+      phoneNumber: {type: String, required: true}
     }
   ],
   checkInDateTime: {
@@ -125,6 +126,10 @@ const bookingDetailsSchema = new mongoose.Schema({
     required: true,
   },
   hotelId: {
+    type: Number,
+    required: true,
+  },
+  staffId: {
     type: Number,
     required: true,
   },
@@ -145,6 +150,13 @@ const bookingDetailsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  paymentDetails: [
+    {
+      amount: { type: Number, required: true },
+      modeOfPayment: { type: String, required: true },
+      date: { type: Date, default: Date.now },
+    },
+  ],  
   paidAmount: {
     type: Number,
     required: true,

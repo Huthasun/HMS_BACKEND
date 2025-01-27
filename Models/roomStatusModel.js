@@ -92,11 +92,11 @@ const roomStatusSchema = new mongoose.Schema({
     default: null
   },
   paidAmount: {
-    type: String,
+    type: Number,
     default: null
   },
   balanceAmount: {
-    type: String,
+    type: Number,
     default: null
   },
   checkoutDuration: {

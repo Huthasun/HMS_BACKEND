@@ -266,6 +266,7 @@ const BookingDetails = require('../Models/bookingDetailsModel');
 const Room = require('../Models/roomsModel');
 const RoomStatus = require('../Models/roomStatusModel');
 const Guest = require('../Models/primaryGuestModel');
+const User = require('../Models/model.login')
 
 exports.createBooking = async (req, res) => {
   console.log("body data.....", req.body);
@@ -321,7 +322,7 @@ exports.createBooking = async (req, res) => {
           gender: guest.gender,
           guestIdType: guest.guestIdProof,
           guestIdNumber: guest.guestIdNumber,
-          phoneNumber:guest.phoneNumber
+          phoneNumber: guest.phoneNumber // Field appears to be missing in the request
         }))
       : [];
 
@@ -339,11 +340,19 @@ exports.createBooking = async (req, res) => {
       bookingStatus: "Open",
       roomId: roomId,
       hotelId: hotelId,
+      staffId: Number(req.body.staffId),
       duration: null,
       modeOfPayment: req.body.modeOfPayment,
       numOfDays: req.body.duration,
       guestDetails: guestDetailsArray,
-      pmytotalAmount: Number(req.body.totalamount)
+      pmytotalAmount: Number(req.body.totalamount),
+      paymentDetails: [
+        {
+          amount: Number(req.body.paidamount),
+          modeOfPayment: req.body.modeOfPayment,
+          // date: new Date(),
+        },
+      ],
     };
 
     console.log('Booking Data:', bookingData);
@@ -363,7 +372,7 @@ exports.createBooking = async (req, res) => {
           balanceAmount: req.body.balanceamount || null, // Update balance amount, set to null if not provided
           checkoutDuration: null, // Set to null as per requirements
           CheckOutDateTime: req.body.checkOutDateTime,
-          pmytotalAmount: req.body.pmytotalAmount
+          pmytotalAmount: req.body.totalamount
         },
       },
       { new: true } // Option to return the updated document
@@ -408,13 +417,15 @@ exports.getAllBookingGuests = async (req, res) => {
       bookings.map(async (booking) => {
         const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
         const room = await Room.findOne({ roomId: booking.roomId });
+        const user = await User.findOne({ staffId: booking.staffId });
 
         return {
           ...booking._doc,
           primaryGuestName: primaryGuest ? primaryGuest.name : null,
           primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
           primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
-          roomNo: room ? room.roomNo : null
+          roomNo: room ? room.roomNo : null,
+          username: user ? user.user_name : null,
         };
       })
     );
@@ -536,7 +547,7 @@ exports.searchLatestBookingDetails = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
+ 
 exports.deleteBookingGuest = async (req, res) => {
   try {
     const { bookingId } = req.params;
@@ -552,42 +563,94 @@ exports.deleteBookingGuest = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+// exports.updateBookingDetails = async (req, res) => {
+//   try {
+//     const { bookingId } = req.params;
+//     const updateData = req.body;
+
+//     const booking = await BookingDetails.findOne({ bookingId });
+//     if (!booking) {
+//       return res.status(404).json({ message: 'Booking not found' });
+//     }
+
+//     if (updateData.roomId && updateData.roomStatus) {
+//       const roomStatusUpdate = await RoomStatus.findOneAndUpdate(
+//         { roomId: updateData.roomId },
+//         { $set: { roomStatus: updateData.roomStatus } },
+//         { new: true } 
+//       );
+
+//       if (!roomStatusUpdate) {
+//         return res.status(404).json({ message: 'Room status update failed. Room not found.' });
+//       }
+//     }
+
+//     const updatedBooking = await BookingDetails.findOneAndUpdate(
+//       { bookingId },
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (updateData.primaryGuestDetails) {
+//       await Guest.findOneAndUpdate(
+//         { primaryGuest_Id: booking.primaryGuest_Id },
+//         { $set: updateData.primaryGuestDetails },
+//         { new: true }
+//       );
+//     }
+
+//     res.status(200).json({ message: 'Booking details updated successfully', updatedBooking });
+//   } catch (error) {
+//     console.error('Error updating booking details:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
 
 exports.updateBookingDetails = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const updateData = req.body;
+    const { pay, modeOfPayment, ...updateData } = req.body; // Extract pay and payment-specific data
 
+    // Find the existing booking
     const booking = await BookingDetails.findOne({ bookingId });
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (updateData.roomId && updateData.roomStatus) {
-      const roomStatusUpdate = await RoomStatus.findOneAndUpdate(
-        { roomId: updateData.roomId },
-        { $set: { roomStatus: updateData.roomStatus } },
-        { new: true } 
-      );
+    // Calculate the new paidAmount (current paidAmount + pay value)
+    const updatedPaidAmount = (booking.paidAmount || 0) + parseFloat(pay || 0); // Add the new payment to existing paidAmount
 
-      if (!roomStatusUpdate) {
-        return res.status(404).json({ message: 'Room status update failed. Room not found.' });
-      }
+      // Calculate the new balanceAmount as (pmytotalAmount - updatedPaidAmount)
+      const updatedBalanceAmount = (booking.pmytotalAmount || 0) - updatedPaidAmount; // balanceAmount = pmytotalAmount - updatedPaidAmount
+
+ 
+    // Add a new payment entry to the paymentDetails array
+    const paymentEntry = {
+      amount: parseFloat(pay || 0),
+      modeOfPayment,
+      date: new Date(),
+    };
+
+    // Push the new payment entry into the paymentDetails array
+    if (!Array.isArray(booking.paymentDetails)) {
+      booking.paymentDetails = []; // Initialize the array if it doesn't exist
     }
+    booking.paymentDetails.push(paymentEntry);
 
+    // Update the booking details in the database
     const updatedBooking = await BookingDetails.findOneAndUpdate(
       { bookingId },
-      { $set: updateData },
+      {
+        $set: {
+          ...updateData,
+          paidAmount: updatedPaidAmount,
+          balance: updatedBalanceAmount, // Update balanceAmount
+          modeOfPayment,
+          paymentDetails: booking.paymentDetails, // Include the updated paymentDetails array
+        },
+      },
       { new: true, runValidators: true }
     );
-
-    if (updateData.primaryGuestDetails) {
-      await Guest.findOneAndUpdate(
-        { primaryGuest_Id: booking.primaryGuest_Id },
-        { $set: updateData.primaryGuestDetails },
-        { new: true }
-      );
-    }
 
     res.status(200).json({ message: 'Booking details updated successfully', updatedBooking });
   } catch (error) {
@@ -595,6 +658,88 @@ exports.updateBookingDetails = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+// exports.updateBookingDetails = async (req, res) => {
+//   try {
+//     const { bookingId } = req.params;
+//     const updateData = req.body;
+
+//     const booking = await BookingDetails.findOne({ bookingId });
+//     if (!booking) {
+//       return res.status(404).json({ message: 'Booking not found' });
+//     }
+
+//     // Check if there is a new payment mode and paid amount
+//     if (updateData.modeOfPayment && updateData.paidAmount) {
+//       // Create a new payment entry to add to the paymentDetails array
+//       const newPayment = {
+//         modeOfPayment: updateData.modeOfPayment,
+//         paidAmount: updateData.paidAmount
+//       };
+
+//       // Update the payment details
+//       booking.paymentDetails.push(newPayment);
+
+//       // Update the paidAmount in the bookingDetails schema
+//       const totalPaidAmount = booking.paymentDetails.reduce((total, payment) => total + payment.paidAmount, 0);
+//       const balance = booking.tarrif - totalPaidAmount; // Assuming `tarrif` is the total amount
+
+//       // Update booking with new total paid amount and balance
+//       booking.paidAmount = totalPaidAmount;
+//       booking.balance = balance;
+
+//       // Optionally, if the modeOfPayment and paidAmount are included in the updateData, ensure they are updated in the main collection too
+//       updateData.paidAmount = totalPaidAmount;
+//       updateData.balance = balance;
+
+//       // Apply changes to bookingDetails document
+//       await booking.save(); // Save the updated booking
+
+//       // If there are other fields to be updated (like roomId, etc.), update them
+//       if (updateData.roomId && updateData.roomStatus) {
+//         const roomStatusUpdate = await RoomStatus.findOneAndUpdate(
+//           { roomId: updateData.roomId },
+//           { $set: { roomStatus: updateData.roomStatus } },
+//           { new: true }
+//         );
+
+//         if (!roomStatusUpdate) {
+//           return res.status(404).json({ message: 'Room status update failed. Room not found.' });
+//         }
+//       }
+
+//       if (updateData.primaryGuestDetails) {
+//         await Guest.findOneAndUpdate(
+//           { primaryGuest_Id: booking.primaryGuest_Id },
+//           { $set: updateData.primaryGuestDetails },
+//           { new: true }
+//         );
+//       }
+
+//       return res.status(200).json({
+//         message: 'Booking details and payment updated successfully',
+//         updatedBooking: booking
+//       });
+//     }
+
+//     // If no new payment info is provided, just update other fields in the booking details
+//     const updatedBooking = await BookingDetails.findOneAndUpdate(
+//       { bookingId },
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     );
+
+//     res.status(200).json({
+//       message: 'Booking details updated successfully',
+//       updatedBooking
+//     });
+//   } catch (error) {
+//     console.error('Error updating booking details:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
 //   try {
 //     // Extract data from request body
 //     r = Number(req.body.roomNo)

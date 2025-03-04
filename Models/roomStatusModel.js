@@ -70,9 +70,9 @@ const roomStatusSchema = new mongoose.Schema({
     ref: 'Room' // Reference to the Room schema
   },
   roomNo: {
-    type: Number,
+    type: String,
     required: true,
-    unique: true
+    // unique: true
   },
   roomStatus: {
     type: String,

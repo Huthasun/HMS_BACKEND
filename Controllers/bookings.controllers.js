@@ -267,6 +267,8 @@ const Room = require('../Models/roomsModel');
 const RoomStatus = require('../Models/roomStatusModel');
 const Guest = require('../Models/primaryGuestModel');
 const User = require('../Models/model.login')
+const Hotel = require('../Models/hotelsModel')
+const moment = require('moment');
 
 exports.createBooking = async (req, res) => {
   console.log("body data.....", req.body);
@@ -418,13 +420,14 @@ exports.getAllBookingGuests = async (req, res) => {
         const primaryGuest = await Guest.findOne({ primaryGuest_Id: booking.primaryGuest_Id });
         const room = await Room.findOne({ roomId: booking.roomId });
         const user = await User.findOne({ staffId: booking.staffId });
-
+        const hotel = room ? await Hotel.findOne({ hotelId: room.hotelId }) : null;
         return {
           ...booking._doc,
           primaryGuestName: primaryGuest ? primaryGuest.name : null,
           primaryGuestIdNumber: primaryGuest ? primaryGuest.guestIdNumber : null,
           primaryGuestPhoneNumber: primaryGuest ? primaryGuest.phoneNumber : null,
           roomNo: room ? room.roomNo : null,
+          hotelName: hotel ? hotel.name : null,  // Add hotel name
           username: user ? user.user_name : null,
         };
       })
@@ -433,10 +436,24 @@ exports.getAllBookingGuests = async (req, res) => {
     // Get the total count of bookings for pagination
     const totalCount = await BookingDetails.countDocuments();
     // console.log(totalCount);
-    
+     // Filter bookings for today based on checkInDateTime
+     const today = moment().startOf('day'); // Get today's date at midnight
+     const todayBookings = bookings.filter(booking =>
+       moment(booking.checkInDateTime).isSame(today, 'day')
+     );
+ 
+     // Calculate the total paid amount for today's bookings
+     const totalPaidToday = todayBookings.reduce((total, booking) => {
+       return total + (booking.paidAmount || 0); // Ensure no NaN values
+     }, 0);
+ 
+     // Print total paid amount for today in console
+     console.log(`Total Paid Amount for Today: ${totalPaidToday}`);
+ 
 
     res.status(200).json({
       data: formattedGuests,
+      totalPaidToday,
       // totalPages: Math.ceil(totalCount / limit),
       // currentPage: page,
       // totalCount

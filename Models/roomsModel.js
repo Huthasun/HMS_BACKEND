@@ -6,12 +6,12 @@ const roomSchema = new mongoose.Schema({
   roomId: { // Auto-incrementing ID
     type: Number,
     unique: true,
-    required: true
+    // required: true
   },
   roomNo: {
     type: Number,
     required: true,
-    unique: true // Ensure room numbers are unique
+  //   unique: true // Ensure room numbers are unique
   },
   roomType: {
     type: String, // Using String for roomType
@@ -29,9 +29,13 @@ const roomSchema = new mongoose.Schema({
   }
 });
 
+// Add compound index to make (hotelId, roomNo) unique
+roomSchema.index({ hotelId: 1, roomNo: 1 }, { unique: true });
+
 // Apply the auto-increment plugin to create an auto-incrementing roomId
 roomSchema.plugin(AutoIncrement, { inc_field: 'roomId' });
 
 // Create and export the Room model
 const Room = mongoose.model('Room', roomSchema);
 module.exports = Room;
+ 

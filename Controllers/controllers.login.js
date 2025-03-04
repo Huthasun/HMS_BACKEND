@@ -22,6 +22,7 @@
 //   });
   
 const HMS_Models = require("../Models/model.login.js");
+const RoomModel = require("../Models/roomsModel.js"); // Import your Room model
 const bcrypt = require('bcrypt');
 
 exports.login = async (req, res) => {
@@ -56,7 +57,19 @@ exports.login = async (req, res) => {
     console.log("User instance found:", user_instance);
     console.log("Session user------------------:", req.session.user);
 
-    res.status(200).json({ "status": "user_validated", "username":username,role: user_instance.role, staffId: user_instance.staffId  });
+    const rooms = await RoomModel.find({ hotelId: user_instance.hotelId });
+    console.log("Filtered rooms:", rooms);
+    res.status(200).json({ 
+      status: "user_validated", 
+      username: username, 
+      role: user_instance.role, 
+      staffId: user_instance.staffId,
+      hotelId: user_instance.hotelId,
+      rooms: rooms // Send the filtered rooms
+    });
+
+
+    // res.status(200).json({ "status": "user_validated", "username":username,role: user_instance.role, staffId: user_instance.staffId  });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -80,7 +93,7 @@ exports.logout = (req, res) => {
   }
 };
 exports.register = async (req, res) => {
-  const { username, password,role } = req.body;
+  const { username, password,role,hotelId  } = req.body;
 
   try {
     const existingUser = await HMS_Models.findOne({ user_name: username });
@@ -91,7 +104,8 @@ exports.register = async (req, res) => {
     const newUser = new HMS_Models({
       user_name: username,
       password: password, // Password will be hashed by pre-save hook
-      role: role || 'user'  // Default role is 'user' if not provided
+      role: role || 'user' , // Default role is 'user' if not provided
+      hotelId: hotelId
     });
 
     await newUser.save();
@@ -103,7 +117,8 @@ exports.register = async (req, res) => {
       message: 'User registered successfully',
       sessionId: req.session.id,
       user: req.session.user,
-      role: newUser.role  // Include the role in the response
+      role: newUser.role , // Include the role in the response
+      hotelId: newUser.hotelId
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

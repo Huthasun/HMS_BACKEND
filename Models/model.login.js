@@ -90,7 +90,8 @@ const userSchema = new Schema({
   },
   hotelId: {
     type: Number,
-    default: 1  // Add hotelId to associate the user with a specific hotel
+    required: true,
+    ref : "Hotel"
   }
 });
 

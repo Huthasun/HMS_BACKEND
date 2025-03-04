@@ -1,19 +1,39 @@
 const Room = require('../Models/roomsModel');
+// const Room = require('../models/roomModel');
+
+
+// exports.createRoom = async (req, res) => {
+//   try {
+//     const { roomNo, roomType, price, hotelId } = req.body;
+//     if (!roomNo || !roomType || !price || !hotelId) {
+//       return res.status(400).json({ error: 'All fields are required' });
+//     }
+//     const newRoom = new Room({ roomNo, roomType, price, hotelId });
+//     const savedRoom = await newRoom.save();
+//     res.status(201).json(savedRoom);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
 
 exports.createRoom = async (req, res) => {
   try {
+    console.log("Request body:", req.body); // Log the incoming data
+
     const { roomNo, roomType, price, hotelId } = req.body;
+
     if (!roomNo || !roomType || !price || !hotelId) {
       return res.status(400).json({ error: 'All fields are required' });
     }
+
     const newRoom = new Room({ roomNo, roomType, price, hotelId });
     const savedRoom = await newRoom.save();
     res.status(201).json(savedRoom);
   } catch (error) {
+    console.error("Error creating room:", error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 exports.getRoomPriceById = async (req, res) => {
   try {
       const { roomId } = req.params; // roomId is the room number now
@@ -27,10 +47,23 @@ exports.getRoomPriceById = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
   }
 };
+// exports.getAllRooms = async (req, res) => {
+//   try {
+//     const rooms = await Room.find(); // Fetches all room records from the database
+//     res.status(200).json(rooms);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
 exports.getAllRooms = async (req, res) => {
   try {
-    const rooms = await Room.find(); // Fetches all room records from the database
+    const { hotelId } = req.query;
+    if (!hotelId) return res.status(400).json({ error: 'Hotel ID is required' });
+    
+    const rooms = await Room.find({ hotelId });
     res.status(200).json(rooms);
+
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }

@@ -146,54 +146,51 @@ exports.getAllRoomStatus = async (req, res) => {
     });
   }
 };
-
-// Create a new room status record 
-exports.createRoomStatus = async (req, res) => { 
+exports.createRoomStatus = async (req, res) => {
   try {
-    const { roomNo } = req.body;
+    const { hotelId, roomNo } = req.body;
 
-    // Fetch the room details using the room number
-    const room = await Room.findOne({ roomNo });
+    if (!hotelId || !roomNo) {
+      return res.status(400).json({ message: 'Hotel ID and Room number are required' });
+    }
+
+    // Ensure room number is always a 3-digit string
+    const formattedRoomNo = String(roomNo).padStart(3, '0');
+
+    // Find the room by hotelId and formatted room number
+    const room = await Room.findOne({ hotelId: hotelId, roomNo: formattedRoomNo });
+
     if (!room) {
-      return res.status(404).json({ message: 'Room not found' });
+      return res.status(404).json({ 
+        message: `Room not found for hotel ID ${hotelId} and room number ${formattedRoomNo}` 
+      });
     }
 
-    // Fetch the hotel details using the hotel ID from the room
-    const hotel = await Hotel.findOne({ hotelId: room.hotelId });
-    if (!hotel) {
-      return res.status(404).json({ message: 'Hotel not found' });
-    }
-
-    // Create a new room status record
+    // Create new room status
     const newRoomStatus = new RoomStatus({
       hotelId: room.hotelId,
       roomId: room.roomId,
-      roomNo: room.roomNo,
-      roomStatus: 'vacant', // Default status
+      roomNo: formattedRoomNo,
+      roomStatus: 'vacant',
       bookingId: null,
-      primaryGuestId: null,
+      primaryGuestName: null,
       tarrif: null,
       paidAmount: null,
       balanceAmount: null,
       checkoutDuration: null,
-      CheckOutDateTime:null,
-      pmytotalAmount:null
+      CheckOutDateTime: null,
+      pmytotalAmount: null
     });
 
-
-    // const primaryGuest = await PrimaryGuest.findOne({ guestId: roomStatus.primaryGuestId });
-    // console.log("primary...",primaryGuest);
-    
-
-    
-
-    // Save the record to the database
+    // Save to DB
     const createdRoom = await newRoomStatus.save();
     res.status(201).json({ message: 'Room status created successfully', data: createdRoom });
+
   } catch (error) {
     res.status(500).json({ message: 'Error creating room status', error: error.message });
   }
 };
+
 // 
 // Function to update room status
 // exports.updateRoomStatus = async (req, res) => {

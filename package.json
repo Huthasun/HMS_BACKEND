@@ -20,7 +20,7 @@
     "mongodb": "^6.7.0",
     "mongoose": "",
     "mongoose-auto-increment": "",
-    "mongoose-sequence": "^"
+    "mongoose-sequence": ""
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

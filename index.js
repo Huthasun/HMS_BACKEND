@@ -181,7 +181,7 @@ app.use(session({
 
 // Routes
 app.use("", customerRoutes);
-app.use("", userRoute);
+app.use("/", userRoute);
 app.use("/bookings", bookingRoutes);
 app.use("/create-primary-guest", primaryGuestRoutes); // Ensure correct path
 app.use("/hotels", hotelRoutes);
@@ -200,7 +200,7 @@ mongoose
   .connect("mongodb+srv://saikiranautomac:jXGLmMQ7RKuO00uP@cluster0.qssqx4c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
   .then(() => {
     console.log("Connected to database!");
-    app.listen(3000,'localhost', () => {
+    app.listen(80,'localhost', () => {
       console.log("Server is running on port 80");
     });
   })

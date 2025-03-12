@@ -192,7 +192,10 @@ app.use(express.static(path.resolve('./build')));
 
 // Fallback for React Router
 app.get("*", (req, res) => {
-  res.sendFile(path.resolve('./build/index.html'));
+  // res.sendFile(path.resolve('./build/index.html'));
+  
+    res.send("Backend server is running!");
+
 }); 
 
 // Connect to MongoDB and start the server

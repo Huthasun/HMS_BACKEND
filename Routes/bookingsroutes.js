@@ -9,4 +9,5 @@ router.get('/latest-booking-details', bookingController.searchLatestBookingDetai
 router.delete('/deleteGuest/:bookingId', bookingController.deleteBookingGuest);
 router.put('/updateBooking/:bookingId', bookingController.updateBookingDetails);
 // router.put('/bookings/:id', bookingController.updateBooking);
+router.get('/daily-revenue', bookingController.getDailyRevenue);
 module.exports = router;

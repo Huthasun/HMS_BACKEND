@@ -166,8 +166,8 @@ app.use(cookieParser());
 // Define CORS options
 const corsOptions = {
   // origin: ["http://localhost:3000", "http://192.168.29.68:3000"],
-  // origin: ["https://hms.automactechnologies.in","http://192.168.1.26:3000","http://localhost:3000"],
-  origin:["http://192.168.1.6:3000","http://192.168.137.1:3000","http://192.168.1.7:3000","http://localhost:3000"],
+  origin: ["https://hms.automactechnologies.in","http://192.168.1.26:3000","http://localhost:3000"],
+  // origin:["http://192.168.1.6:3000","http://192.168.137.1:3000","http://192.168.1.7:3000","http://localhost:3000"],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: ["Content-Type", "Authorization"],

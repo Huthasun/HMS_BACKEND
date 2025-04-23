@@ -343,34 +343,76 @@ if (!roomStatus) {
     });
   }
 };
+// exports.updateRoomStatusById = async (req, res) => {
+//   try {
+//     const { roomStatusId,hotelId  } = req.params; // Extract roomStatusId from URL
+//     const updateFields = req.body; // Fields to update are passed in the body
+
+//     // Validate if the record exists
+//     const roomStatusRecord = await RoomStatus.findOne({ roomStatusId });
+//     if (!roomStatusRecord) {
+//       return res.status(404).json({ message: 'Room status record not found.' });
+//     }
+
+//     // Update the record with the provided fields
+//     Object.keys(updateFields).forEach((field) => {
+//       roomStatusRecord[field] = updateFields[field];
+//     });
+
+//     // Save the updated record
+//     const updatedRoomStatus = await roomStatusRecord.save();
+
+//     res.status(200).json({
+//       message: 'Room status updated successfully.',
+//       data: updatedRoomStatus,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       message: 'Error updating room status.',
+//       error: error.message,
+//     });
+//   }
+// };
 exports.updateRoomStatusById = async (req, res) => {
   try {
-    const { roomStatusId,hotelId  } = req.params; // Extract roomStatusId from URL
-    const updateFields = req.body; // Fields to update are passed in the body
+      const { roomStatusId } = req.params;
+      const updateFields = req.body;
 
-    // Validate if the record exists
-    const roomStatusRecord = await RoomStatus.findOne({ roomStatusId });
-    if (!roomStatusRecord) {
-      return res.status(404).json({ message: 'Room status record not found.' });
-    }
+      // Validate required fields
+      if (!updateFields.checkOutDateTime) {
+          return res.status(400).json({ message: 'CheckOutDateTime is required' });
+      }
 
-    // Update the record with the provided fields
-    Object.keys(updateFields).forEach((field) => {
-      roomStatusRecord[field] = updateFields[field];
-    });
+      // Find and update the room status
+      const updatedRoomStatus = await RoomStatus.findOneAndUpdate(
+          { roomStatusId },
+          {
+              $set: {
+                  CheckOutDateTime: updateFields.checkOutDateTime,
+                  pmytotalAmount: updateFields.pmytotalAmount,
+                  paidAmount: updateFields.paidAmount,
+                  balanceAmount: updateFields.balanceAmount,
+                  tarrif: updateFields.tarrif,
+                  roomStatus: updateFields.roomStatus || 'occupied'
+              }
+          },
+          { new: true, runValidators: true }
+      );
 
-    // Save the updated record
-    const updatedRoomStatus = await roomStatusRecord.save();
+      if (!updatedRoomStatus) {
+          return res.status(404).json({ message: 'Room status record not found.' });
+      }
 
-    res.status(200).json({
-      message: 'Room status updated successfully.',
-      data: updatedRoomStatus,
-    });
+      res.status(200).json({
+          message: 'Room status updated successfully.',
+          data: updatedRoomStatus
+      });
   } catch (error) {
-    res.status(500).json({
-      message: 'Error updating room status.',
-      error: error.message,
-    });
+      console.error('Error updating room status:', error);
+      res.status(500).json({
+          message: 'Error updating room status.',
+          error: error.message,
+      });
   }
 };
 

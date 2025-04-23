@@ -629,7 +629,7 @@ exports.deleteBookingGuest = async (req, res) => {
 exports.updateBookingDetails = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { pay, modeOfPayment, ...updateData } = req.body; // Extract pay and payment-specific data
+    const { pay, modeOfPayment, ...updateData } = req.body;
 
     // Find the existing booking
     const booking = await BookingDetails.findOne({ bookingId });
@@ -637,36 +637,41 @@ exports.updateBookingDetails = async (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    // Calculate the new paidAmount (current paidAmount + pay value)
-    const updatedPaidAmount = (booking.paidAmount || 0) + parseFloat(pay || 0); // Add the new payment to existing paidAmount
+    // Log check-in and check-out datetimes to ensure they're present
+    console.log("Updating checkInDateTime:", updateData.checkInDateTime);
+    console.log("Updating checkOutDateTime:", updateData.checkOutDateTime);
 
-      // Calculate the new balanceAmount as (pmytotalAmount - updatedPaidAmount)
-      const updatedBalanceAmount = (booking.pmytotalAmount || 0) - updatedPaidAmount; // balanceAmount = pmytotalAmount - updatedPaidAmount
+    // Calculate updated paid amount
+    const updatedPaidAmount = (booking.paidAmount || 0) + parseFloat(pay || 0);
 
- 
-    // Add a new payment entry to the paymentDetails array
+    // Calculate new balance
+    const updatedBalanceAmount = (booking.pmytotalAmount || 0) - updatedPaidAmount;
+
+    // Add new payment entry
     const paymentEntry = {
       amount: parseFloat(pay || 0),
       modeOfPayment,
       date: new Date(),
     };
 
-    // Push the new payment entry into the paymentDetails array
+    // Ensure paymentDetails array exists
     if (!Array.isArray(booking.paymentDetails)) {
-      booking.paymentDetails = []; // Initialize the array if it doesn't exist
+      booking.paymentDetails = [];
     }
     booking.paymentDetails.push(paymentEntry);
 
-    // Update the booking details in the database
+    // Update booking in database
     const updatedBooking = await BookingDetails.findOneAndUpdate(
       { bookingId },
       {
         $set: {
           ...updateData,
+          checkInDateTime: updateData.checkInDateTime,   // ✅ Explicitly included
+          checkOutDateTime: updateData.checkOutDateTime, // ✅ Explicitly included
           paidAmount: updatedPaidAmount,
-          balance: updatedBalanceAmount, // Update balanceAmount
+          balance: updatedBalanceAmount,
           modeOfPayment,
-          paymentDetails: booking.paymentDetails, // Include the updated paymentDetails array
+          paymentDetails: booking.paymentDetails,
         },
       },
       { new: true, runValidators: true }
@@ -678,7 +683,6 @@ exports.updateBookingDetails = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 exports.getDailyRevenue = async (req, res) => {
   try {
     const last24Hours = moment().subtract(24, 'hours').toDate();

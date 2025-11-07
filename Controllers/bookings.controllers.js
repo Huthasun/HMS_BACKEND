@@ -645,7 +645,7 @@ exports.updateBookingDetails = async (req, res) => {
     const updatedPaidAmount = (booking.paidAmount || 0) + parseFloat(pay || 0);
 
     // Calculate new balance
-    const updatedBalanceAmount = (booking.pmytotalAmount || 0) - updatedPaidAmount;
+    // const updatedBalanceAmount = (booking.pmytotalAmount || 0) - updatedPaidAmount;
 
     // Add new payment entry
     const paymentEntry = {
@@ -660,6 +660,11 @@ exports.updateBookingDetails = async (req, res) => {
     }
     booking.paymentDetails.push(paymentEntry);
 
+
+     // Calculate new balance
+     const totalAmount = parseFloat(updateData.pmytotalAmount || booking.pmytotalAmount || 0);
+     const updatedBalance = totalAmount - updatedPaidAmount;
+
     // Update booking in database
     const updatedBooking = await BookingDetails.findOneAndUpdate(
       { bookingId },
@@ -669,7 +674,7 @@ exports.updateBookingDetails = async (req, res) => {
           checkInDateTime: updateData.checkInDateTime,   // ✅ Explicitly included
           checkOutDateTime: updateData.checkOutDateTime, // ✅ Explicitly included
           paidAmount: updatedPaidAmount,
-          balance: updatedBalanceAmount,
+          balance: updatedBalance,
           modeOfPayment,
           paymentDetails: booking.paymentDetails,
         },

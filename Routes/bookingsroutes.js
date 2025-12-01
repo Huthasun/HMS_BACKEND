@@ -10,4 +10,6 @@ router.delete('/deleteGuest/:bookingId', bookingController.deleteBookingGuest);
 router.put('/updateBooking/:bookingId', bookingController.updateBookingDetails);
 // router.put('/bookings/:id', bookingController.updateBooking);
 router.get('/daily-revenue', bookingController.getDailyRevenue);
+router.get("/booking-history", bookingController.getBookingHistoryByPhone);
+
 module.exports = router;

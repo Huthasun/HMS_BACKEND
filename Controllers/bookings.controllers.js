@@ -830,6 +830,77 @@ exports.getDailyRevenue = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+// Get ALL booking history by phone number
+// Get ALL booking history by phone number
+exports.getBookingHistoryByPhone = async (req, res) => {
+  try {
+    const { phoneNumber } = req.query;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+
+    // Step 1: Get Guest by phone number
+    const guest = await Guest.findOne({ phoneNumber });
+
+    if (!guest) {
+      return res.status(404).json({ message: "Guest not found" });
+    }
+
+    // Step 2: Get ALL bookings for that guest
+    const bookings = await BookingDetails.find({
+      primaryGuest_Id: guest.primaryGuest_Id
+    }).sort({ createdAt: -1 });
+
+    if (bookings.length === 0) {
+      return res.status(404).json({ message: "No bookings found for this guest" });
+    }
+
+    // Step 3: Add extra details
+    const formatted = await Promise.all(
+      bookings.map(async (booking) => {
+        const room = await Room.findOne({ roomId: booking.roomId });
+        const hotel = room ? await Hotel.findOne({ hotelId: room.hotelId }) : null;
+        const user = await User.findOne({ staffId: booking.staffId }); // ⭐ FETCH STAFF NAME HERE
+
+        return {
+          bookingId: booking.bookingId,
+          roomNo: room ? room.roomNo : null,
+          hotelName: hotel ? hotel.name : null,
+
+          checkInDateTime: booking.checkInDateTime,
+          checkOutDateTime: booking.checkOutDateTime,
+
+          numOfDays: booking.numOfDays,                 // ⭐ FIXED (duration)
+          pmytotalAmount: booking.pmytotalAmount,      // ⭐ FIXED (total amount)
+          totalAmount: booking.pmytotalAmount,         // support FE
+          paidAmount: booking.paidAmount,
+          balance: booking.balance,
+
+          username: user ? user.user_name : "-",       // ⭐ FIXED STAFF NAME
+
+          createdAt: booking.createdAt,
+        };
+      })
+    );
+
+    res.status(200).json({
+      guestDetails: {
+        name: guest.name,
+        phoneNumber: guest.phoneNumber,
+        guestIdNumber: guest.guestIdNumber
+      },
+      totalBookings: bookings.length,
+      bookingHistory: formatted
+    });
+
+  } catch (error) {
+    console.error("Error fetching booking history:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 // exports.updateBookingDetails = async (req, res) => {
 //   try {

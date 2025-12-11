@@ -688,20 +688,166 @@ exports.updateBookingDetails = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+// exports.getDailyRevenue = async (req, res) => {
+//   try {
+//     const last24Hours = moment().subtract(24, 'hours').toDate();
+
+//     // Fetch all bookings within the last 24 hours
+//     const recentBookings = await BookingDetails.find({ checkInDateTime: { $gte: last24Hours } });
+
+//     // Get room status data for all hotels
+//     const allRoomStatuses = await RoomStatus.find();
+//     const allRooms = await Room.find();
+
+//     // Calculate room statistics for each hotel
+//     const roomStatsByHotel = {};
+    
+//     allRooms.forEach(room => {
+//       const hotelId = room.hotelId;
+//       if (!roomStatsByHotel[hotelId]) {
+//         roomStatsByHotel[hotelId] = {
+//           total_rooms: 0,
+//           booked_rooms: 0,
+//           housekeeping_rooms: 0,
+//           available_rooms: 0
+//         };
+//       }
+//       roomStatsByHotel[hotelId].total_rooms++;
+//     });
+
+//     allRoomStatuses.forEach(roomStatus => {
+//       const hotelId = roomStatus.hotelId;
+//       if (roomStatsByHotel[hotelId]) {
+//         if (roomStatus.roomStatus === 'occupied') {
+//           roomStatsByHotel[hotelId].booked_rooms++;
+//         } else if (roomStatus.roomStatus === 'housekeeping') {
+//           roomStatsByHotel[hotelId].housekeeping_rooms++;
+//         } else if (roomStatus.roomStatus === 'vacant') {
+//           roomStatsByHotel[hotelId].available_rooms++;
+//         }
+//       }
+//     });
+
+//     // Calculate occupancy percentage for each hotel
+//     Object.keys(roomStatsByHotel).forEach(hotelId => {
+//       const stats = roomStatsByHotel[hotelId];
+//       stats.occupancy_percentage = stats.total_rooms > 0 
+//         ? Math.round((stats.booked_rooms / stats.total_rooms) * 100) 
+//         : 0;
+//     });
+
+//     let revenueByHotel = {};
+
+//     // Initialize with room stats for all hotels (even those without recent bookings)
+//     Object.keys(roomStatsByHotel).forEach(hotelId => {
+//       revenueByHotel[hotelId] = {
+//         totalRevenue: 0,
+//         totalCash: 0,
+//         totalCard: 0,
+//         totalUPI: 0,
+//         last24HoursCheckins: 0, // New field for check-ins count
+//         room_stats: roomStatsByHotel[hotelId]
+//       };
+//     });
+
+//     // Process bookings to calculate revenue and count check-ins
+//     recentBookings.forEach((booking) => {
+//       const hotelId = booking.hotelId;
+
+//       if (!revenueByHotel[hotelId]) {
+//         revenueByHotel[hotelId] = {
+//           totalRevenue: 0,
+//           totalCash: 0,
+//           totalCard: 0,
+//           totalUPI: 0,
+//           last24HoursCheckins: 0,
+//           room_stats: roomStatsByHotel[hotelId] || {
+//             total_rooms: 0,
+//             booked_rooms: 0,
+//             housekeeping_rooms: 0,
+//             available_rooms: 0,
+//             occupancy_percentage: 0
+//           }
+//         };
+//       }
+
+//       // Count this as a check-in
+//       revenueByHotel[hotelId].last24HoursCheckins++;
+
+//       const paymentDetails = booking.paymentDetails || [];
+
+//       paymentDetails.forEach((payment) => {
+//         const amount = Number(payment.amount) || 0;
+//         const modeOfPayment = payment.modeOfPayment.toLowerCase();
+
+//         revenueByHotel[hotelId].totalRevenue += amount;
+
+//         if (modeOfPayment.includes('cash')) {
+//           revenueByHotel[hotelId].totalCash += amount;
+//         } else if (modeOfPayment.includes('card')) {
+//           revenueByHotel[hotelId].totalCard += amount;
+//         } else if (modeOfPayment.includes('upi')) {
+//           revenueByHotel[hotelId].totalUPI += amount;
+//         }
+//       });
+//     });
+
+//     // Filter for hotel IDs 1 and 2 if needed
+//     const filteredResults = {};
+//     if (req.query.hotelIds) {
+//       const requestedIds = req.query.hotelIds.split(',').map(id => parseInt(id));
+//       requestedIds.forEach(id => {
+//         if (revenueByHotel[id]) {
+//           filteredResults[id] = revenueByHotel[id];
+//         }
+//       });
+//     } else {
+//       // Default to showing all hotels if no filter is specified
+//       Object.assign(filteredResults, revenueByHotel);
+//     }
+
+//     // Console log for debugging
+//     Object.keys(filteredResults).forEach((hotelId) => {
+//       console.log(`\nHotel ID: ${hotelId}`);
+//       console.log('--- Revenue ---');
+//       console.log(`  Total Revenue: ${filteredResults[hotelId].totalRevenue}`);
+//       console.log(`  Total Cash: ${filteredResults[hotelId].totalCash}`);
+//       console.log(`  Total Card: ${filteredResults[hotelId].totalCard}`);
+//       console.log(`  Total UPI: ${filteredResults[hotelId].totalUPI}`);
+//       console.log(`  Last 24h Check-ins: ${filteredResults[hotelId].last24HoursCheckins}`);
+//       console.log('--- Room Stats ---');
+//       console.log(`  Total Rooms: ${filteredResults[hotelId].room_stats.total_rooms}`);
+//       console.log(`  Booked Rooms: ${filteredResults[hotelId].room_stats.booked_rooms}`);
+//       console.log(`  Available Rooms: ${filteredResults[hotelId].room_stats.available_rooms}`);
+//       console.log(`  Housekeeping Rooms: ${filteredResults[hotelId].room_stats.housekeeping_rooms}`);
+//       console.log(`  Occupancy Percentage: ${filteredResults[hotelId].room_stats.occupancy_percentage}%`);
+//     });
+
+//     res.status(200).json({ revenueByHotel: filteredResults });
+
+//   } catch (error) {
+//     console.error('Error calculating daily revenue:', error);
+//     res.status(500).json({ message: 'Internal server error', error: error.message });
+//   }
+// };
 exports.getDailyRevenue = async (req, res) => {
   try {
-    const last24Hours = moment().subtract(24, 'hours').toDate();
+    // 🔥 FIXED: TODAY'S FULL DAY RANGE
+    const startOfDay = moment().startOf('day').toDate(); // 00:00 today
+    const endOfDay = moment().endOf('day').toDate();     // 23:59 today
 
-    // Fetch all bookings within the last 24 hours
-    const recentBookings = await BookingDetails.find({ checkInDateTime: { $gte: last24Hours } });
+    // Fetch bookings only for today's date
+    const recentBookings = await BookingDetails.find({
+      checkInDateTime: { $gte: startOfDay, $lte: endOfDay }
+    });
 
-    // Get room status data for all hotels
+    // Fetch all room statuses and rooms
     const allRoomStatuses = await RoomStatus.find();
     const allRooms = await Room.find();
 
-    // Calculate room statistics for each hotel
+    // Prepare room stats grouped by hotel
     const roomStatsByHotel = {};
-    
+
     allRooms.forEach(room => {
       const hotelId = room.hotelId;
       if (!roomStatsByHotel[hotelId]) {
@@ -709,145 +855,120 @@ exports.getDailyRevenue = async (req, res) => {
           total_rooms: 0,
           booked_rooms: 0,
           housekeeping_rooms: 0,
-          available_rooms: 0
+          available_rooms: 0,
+          service_rooms: 0,   // Optional: add service mode also
+          occupancy_percentage: 0
         };
       }
       roomStatsByHotel[hotelId].total_rooms++;
     });
 
-    allRoomStatuses.forEach(roomStatus => {
-      const hotelId = roomStatus.hotelId;
-      if (roomStatsByHotel[hotelId]) {
-        if (roomStatus.roomStatus === 'occupied') {
-          roomStatsByHotel[hotelId].booked_rooms++;
-        } else if (roomStatus.roomStatus === 'housekeeping') {
-          roomStatsByHotel[hotelId].housekeeping_rooms++;
-        } else if (roomStatus.roomStatus === 'vacant') {
-          roomStatsByHotel[hotelId].available_rooms++;
-        }
-      }
+    // Count room statuses
+    allRoomStatuses.forEach(room => {
+      const stats = roomStatsByHotel[room.hotelId];
+      if (!stats) return;
+
+      if (room.roomStatus === "occupied") stats.booked_rooms++;
+      else if (room.roomStatus === "housekeeping") stats.housekeeping_rooms++;
+      else if (room.roomStatus === "service") stats.service_rooms++;
+      else if (room.roomStatus === "vacant") stats.available_rooms++;
     });
 
-    // Calculate occupancy percentage for each hotel
-    Object.keys(roomStatsByHotel).forEach(hotelId => {
-      const stats = roomStatsByHotel[hotelId];
-      stats.occupancy_percentage = stats.total_rooms > 0 
-        ? Math.round((stats.booked_rooms / stats.total_rooms) * 100) 
-        : 0;
+    // Calculate occupancy %
+    Object.values(roomStatsByHotel).forEach(stats => {
+      stats.occupancy_percentage =
+        stats.total_rooms > 0
+          ? Math.round((stats.booked_rooms / stats.total_rooms) * 100)
+          : 0;
     });
 
-    let revenueByHotel = {};
+    // Revenue calculation grouped by hotel
+    const revenueByHotel = {};
 
-    // Initialize with room stats for all hotels (even those without recent bookings)
     Object.keys(roomStatsByHotel).forEach(hotelId => {
       revenueByHotel[hotelId] = {
         totalRevenue: 0,
         totalCash: 0,
         totalCard: 0,
         totalUPI: 0,
-        last24HoursCheckins: 0, // New field for check-ins count
+        last24HoursCheckins: 0,
         room_stats: roomStatsByHotel[hotelId]
       };
     });
 
-    // Process bookings to calculate revenue and count check-ins
-    recentBookings.forEach((booking) => {
+    // Today's bookings → Group revenue by hotel
+    recentBookings.forEach(booking => {
       const hotelId = booking.hotelId;
 
-      if (!revenueByHotel[hotelId]) {
-        revenueByHotel[hotelId] = {
-          totalRevenue: 0,
-          totalCash: 0,
-          totalCard: 0,
-          totalUPI: 0,
-          last24HoursCheckins: 0,
-          room_stats: roomStatsByHotel[hotelId] || {
-            total_rooms: 0,
-            booked_rooms: 0,
-            housekeeping_rooms: 0,
-            available_rooms: 0,
-            occupancy_percentage: 0
-          }
-        };
-      }
-
-      // Count this as a check-in
       revenueByHotel[hotelId].last24HoursCheckins++;
 
-      const paymentDetails = booking.paymentDetails || [];
+      const payments = booking.paymentDetails || [];
 
-      paymentDetails.forEach((payment) => {
-        const amount = Number(payment.amount) || 0;
-        const modeOfPayment = payment.modeOfPayment.toLowerCase();
-
+      payments.forEach(p => {
+        const amount = Number(p.amount) || 0;
         revenueByHotel[hotelId].totalRevenue += amount;
 
-        if (modeOfPayment.includes('cash')) {
-          revenueByHotel[hotelId].totalCash += amount;
-        } else if (modeOfPayment.includes('card')) {
-          revenueByHotel[hotelId].totalCard += amount;
-        } else if (modeOfPayment.includes('upi')) {
-          revenueByHotel[hotelId].totalUPI += amount;
-        }
+        const mode = p.modeOfPayment?.toLowerCase() || "";
+        if (mode.includes("cash")) revenueByHotel[hotelId].totalCash += amount;
+        if (mode.includes("card")) revenueByHotel[hotelId].totalCard += amount;
+        if (mode.includes("upi")) revenueByHotel[hotelId].totalUPI += amount;
       });
     });
 
-    // Filter for hotel IDs 1 and 2 if needed
-    const filteredResults = {};
+    // Filter results by hotel ID
+    let finalResult = {};
     if (req.query.hotelIds) {
-      const requestedIds = req.query.hotelIds.split(',').map(id => parseInt(id));
-      requestedIds.forEach(id => {
-        if (revenueByHotel[id]) {
-          filteredResults[id] = revenueByHotel[id];
-        }
+      const ids = req.query.hotelIds.split(",").map(Number);
+      ids.forEach(id => {
+        if (revenueByHotel[id]) finalResult[id] = revenueByHotel[id];
       });
     } else {
-      // Default to showing all hotels if no filter is specified
-      Object.assign(filteredResults, revenueByHotel);
+      finalResult = revenueByHotel;
     }
 
-    // Console log for debugging
-    Object.keys(filteredResults).forEach((hotelId) => {
-      console.log(`\nHotel ID: ${hotelId}`);
-      console.log('--- Revenue ---');
-      console.log(`  Total Revenue: ${filteredResults[hotelId].totalRevenue}`);
-      console.log(`  Total Cash: ${filteredResults[hotelId].totalCash}`);
-      console.log(`  Total Card: ${filteredResults[hotelId].totalCard}`);
-      console.log(`  Total UPI: ${filteredResults[hotelId].totalUPI}`);
-      console.log(`  Last 24h Check-ins: ${filteredResults[hotelId].last24HoursCheckins}`);
-      console.log('--- Room Stats ---');
-      console.log(`  Total Rooms: ${filteredResults[hotelId].room_stats.total_rooms}`);
-      console.log(`  Booked Rooms: ${filteredResults[hotelId].room_stats.booked_rooms}`);
-      console.log(`  Available Rooms: ${filteredResults[hotelId].room_stats.available_rooms}`);
-      console.log(`  Housekeeping Rooms: ${filteredResults[hotelId].room_stats.housekeeping_rooms}`);
-      console.log(`  Occupancy Percentage: ${filteredResults[hotelId].room_stats.occupancy_percentage}%`);
-    });
-
-    res.status(200).json({ revenueByHotel: filteredResults });
+    res.status(200).json({ revenueByHotel: finalResult });
 
   } catch (error) {
-    console.error('Error calculating daily revenue:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    console.error("Error calculating daily revenue:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
+
 // Get ALL booking history by phone number
 // Get ALL booking history by phone number
 exports.getBookingHistoryByPhone = async (req, res) => {
   try {
-    const { phoneNumber } = req.query;
+    const { phoneNumber, name, guestIdNumber } = req.query;
 
-    if (!phoneNumber) {
-      return res.status(400).json({ message: "Phone number is required" });
-    }
+    // ❗ Validate input
+    if (!phoneNumber && !name && !guestIdNumber) {
+      return res.status(400).json({
+        message: "Please provide phoneNumber OR name OR guestIdNumber"
+      });
+    } 
 
-    // Step 1: Get Guest by phone number
-    const guest = await Guest.findOne({ phoneNumber });
+    let guest = null;
 
-    if (!guest) {
-      return res.status(404).json({ message: "Guest not found" });
-    }
+// Search by ID
+if (guestIdNumber) {
+  guest = await Guest.findOne({ guestIdNumber });
+}
 
-    // Step 2: Get ALL bookings for that guest
+// Search by Phone
+if (!guest && phoneNumber) {
+  guest = await Guest.findOne({ phoneNumber });
+}
+
+// Search by Name
+if (!guest && name) {
+  guest = await Guest.findOne({ name: { $regex: name, $options: "i" } });
+}
+
+if (!guest) {
+  return res.status(404).json({ message: "Guest not found" });
+}
+
+    // Step 2: Fetch bookings for guest
     const bookings = await BookingDetails.find({
       primaryGuest_Id: guest.primaryGuest_Id
     }).sort({ createdAt: -1 });
@@ -856,12 +977,12 @@ exports.getBookingHistoryByPhone = async (req, res) => {
       return res.status(404).json({ message: "No bookings found for this guest" });
     }
 
-    // Step 3: Add extra details
+    // Step 3: Format data
     const formatted = await Promise.all(
       bookings.map(async (booking) => {
         const room = await Room.findOne({ roomId: booking.roomId });
         const hotel = room ? await Hotel.findOne({ hotelId: room.hotelId }) : null;
-        const user = await User.findOne({ staffId: booking.staffId }); // ⭐ FETCH STAFF NAME HERE
+        const user = await User.findOne({ staffId: booking.staffId });
 
         return {
           bookingId: booking.bookingId,
@@ -871,27 +992,27 @@ exports.getBookingHistoryByPhone = async (req, res) => {
           checkInDateTime: booking.checkInDateTime,
           checkOutDateTime: booking.checkOutDateTime,
 
-          numOfDays: booking.numOfDays,                 // ⭐ FIXED (duration)
-          pmytotalAmount: booking.pmytotalAmount,      // ⭐ FIXED (total amount)
-          totalAmount: booking.pmytotalAmount,         // support FE
+          numOfDays: booking.numOfDays,
+          pmytotalAmount: booking.pmytotalAmount,
+          totalAmount: booking.pmytotalAmount,
           paidAmount: booking.paidAmount,
           balance: booking.balance,
 
-          username: user ? user.user_name : "-",       // ⭐ FIXED STAFF NAME
-
+          username: user ? user.user_name : "-",
           createdAt: booking.createdAt,
         };
       })
     );
 
+    // Final response
     res.status(200).json({
       guestDetails: {
         name: guest.name,
         phoneNumber: guest.phoneNumber,
-        guestIdNumber: guest.guestIdNumber
+        guestIdNumber: guest.guestIdNumber,
       },
       totalBookings: bookings.length,
-      bookingHistory: formatted
+      bookingHistory: formatted,
     });
 
   } catch (error) {

@@ -290,7 +290,7 @@ exports.updateRoomStatus = async (req, res) => {
     console.log('Updating Room:', { hotelId, roomNo, status });
 
     // Validate status
-    if (!['vacant', 'housekeeping'].includes(status)) {
+    if (!['vacant', 'housekeeping', 'service'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
@@ -305,7 +305,7 @@ if (!roomStatus) {
     roomStatus.roomStatus = status;
 
     // Clear specific fields if the status is housekeeping
-    if (status === 'housekeeping') {
+    if (status === 'housekeeping' || status === 'service') {
       roomStatus.bookingId = null;
       roomStatus.primaryGuestName = null;
       roomStatus.tarrif = null;

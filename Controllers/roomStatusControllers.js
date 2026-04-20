@@ -100,9 +100,13 @@ const Room = require('../Models/roomsModel');
 const Hotel = require('../Models/hotelsModel');
 const BookingDetails = require('../Models/bookingDetailsModel');
 const PrimaryGuest = require('../Models/primaryGuestModel'); 
+const activateAdvanceBookings = require('../corn/advanceBookingCron');
+
 // Fetch all room statuses with booking details and primary guest details
 exports.getAllRoomStatus = async (req, res) => {
   try {
+    await activateAdvanceBookings(); // ✅ ADD THIS LINE
+
     // Fetch all room statuses
     const { hotelId } = req.query; // Get hotelId from query params
     // const rooms = await RoomStatus.find();

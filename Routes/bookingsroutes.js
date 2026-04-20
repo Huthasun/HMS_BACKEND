@@ -11,5 +11,6 @@ router.put('/updateBooking/:bookingId', bookingController.updateBookingDetails);
 // router.put('/bookings/:id', bookingController.updateBooking);
 router.get('/daily-revenue', bookingController.getDailyRevenue);
 router.get("/booking-history", bookingController.getBookingHistoryByPhone);
+router.get("/calendar", bookingController.getCalendarBookings);
 
 module.exports = router;

@@ -364,24 +364,49 @@ exports.createBooking = async (req, res) => {
 
     const booking = new BookingDetails(bookingData);
     const savedBooking = await booking.save();
+const checkInDate = moment(req.body.checkInDateTime).startOf("day");
+const today = moment().startOf("day");
 
-    await RoomStatus.findOneAndUpdate(
-      { roomId: roomId },
-      {
-        $set: {
-          roomStatus: 'occupied',
-          bookingId: savedBooking.bookingId, // Update with saved booking ID
-          primaryGuestName: req.body.primaryGuestDetails.name, // Update with primary guest name
-          tarrif: req.body.tarrif, // Update total amount
-          paidAmount: req.body.paidamount, // Update paid amount
-          balanceAmount: req.body.balanceamount || null, // Update balance amount, set to null if not provided
-          checkoutDuration: null, // Set to null as per requirements
-          CheckOutDateTime: req.body.checkOutDateTime,
-          pmytotalAmount: req.body.totalamount
-        },
+    // await RoomStatus.findOneAndUpdate(
+    //   { roomId: roomId },
+    //   {
+    //     $set: {
+    //       roomStatus: 'occupied',
+    //       bookingId: savedBooking.bookingId, // Update with saved booking ID
+    //       primaryGuestName: req.body.primaryGuestDetails.name, // Update with primary guest name
+    //       tarrif: req.body.tarrif, // Update total amount
+    //       paidAmount: req.body.paidamount, // Update paid amount
+    //       balanceAmount: req.body.balanceamount || null, // Update balance amount, set to null if not provided
+    //       checkoutDuration: null, // Set to null as per requirements
+    //       CheckOutDateTime: req.body.checkOutDateTime,
+    //       pmytotalAmount: req.body.totalamount
+    //     },
+    //   },
+    //   { new: true } // Option to return the updated document
+    // );
+if (checkInDate.isSame(today)) {
+  // ✅ DAILY BOOKING
+  await RoomStatus.findOneAndUpdate(
+    { roomId },
+    {
+      $set: {
+        roomStatus: 'occupied',
+        bookingId: savedBooking.bookingId,
+        primaryGuestName: req.body.primaryGuestDetails.name,
+        tarrif: req.body.tarrif,
+        paidAmount: req.body.paidamount,
+        balanceAmount: req.body.balanceamount || null,
+        CheckOutDateTime: req.body.checkOutDateTime,
+        pmytotalAmount: req.body.totalamount
       },
-      { new: true } // Option to return the updated document
-    );
+    }
+  );
+} else {
+  // ✅ ADVANCE BOOKING
+  console.log(
+    "Advance booking saved. Room remains VACANT until check-in date"
+  );
+}
 
     res.status(201).json({
       message: 'Booking created successfully',
@@ -406,13 +431,15 @@ exports.createBooking = async (req, res) => {
   }
 };
 exports.getAllBookingGuests = async (req, res) => {
-  // const { page = 1, limit = 10 } = req.query;  // Get pagination params from query (default to page 1 and 10 items per page)
-
+const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
   try {
-    const bookings = await BookingDetails.find()
-      // .sort({ createdAt: -1 })  // Sorting by the creation date in descending order
-      // .skip((page - 1) * limit)  // Skip the records for the previous pages
-      // .limit(Number(limit));  // Limit the number of records per page
+    
+
+ const bookings = await BookingDetails.find()
+   .sort({ bookingId: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     if (bookings.length === 0) {
       return res.status(404).json({ message: 'No booking guests found' });
@@ -437,30 +464,26 @@ exports.getAllBookingGuests = async (req, res) => {
     );
 
     // Get the total count of bookings for pagination
-    const totalCount = await BookingDetails.countDocuments();
-    // console.log(totalCount);
-     // Filter bookings for today based on checkInDateTime
-     const today = moment().startOf('day'); // Get today's date at midnight
-     const todayBookings = bookings.filter(booking =>
-       moment(booking.checkInDateTime).isSame(today, 'day')
-     );
- 
-     // Calculate the total paid amount for today's bookings
-     const totalPaidToday = todayBookings.reduce((total, booking) => {
-       return total + (booking.paidAmount || 0); // Ensure no NaN values
-     }, 0);
- 
-     // Print total paid amount for today in console
-     console.log(`Total Paid Amount for Today: ${totalPaidToday}`);
- 
+   const totalCount = await BookingDetails.countDocuments();
+ // ✅ calculate BEFORE response
+    const today = moment().startOf('day');
+    const todayBookings = bookings.filter(booking =>
+      moment(booking.checkInDateTime).isSame(today, 'day')
+    );
 
+    const totalPaidToday = todayBookings.reduce((total, booking) => {
+      return total + (booking.paidAmount || 0);
+    }, 0);
+
+    // ✅ SINGLE RESPONSE ONLY
     res.status(200).json({
       data: formattedGuests,
-      totalPaidToday,
-      // totalPages: Math.ceil(totalCount / limit),
-      // currentPage: page,
-      // totalCount
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      totalCount,
+      totalPaidToday
     });
+
   } catch (error) {
     console.error('Error fetching booking guests:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -1020,6 +1043,40 @@ if (!guest) {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+// ================== CALENDAR BOOKINGS API ==================
+exports.getCalendarBookings = async (req, res) => {
+  console.log("🔥 Calendar API HIT");
+
+  try {
+    const { hotelId } = req.query;
+
+    if (!hotelId) {
+      return res.status(400).json({ message: "hotelId is required" });
+    }
+
+    const bookings = await BookingDetails.find({ hotelId: Number(hotelId) });
+
+    const data = await Promise.all(
+      bookings.map(async (b) => {
+        const room = await Room.findOne({ roomId: b.roomId });
+
+        return {
+          roomNo: room ? room.roomNo : null,
+          checkInDateTime: b.checkInDateTime,
+          checkOutDateTime: b.checkOutDateTime
+        };
+      })
+    );
+
+    res.set("Cache-Control", "no-store");
+    res.status(200).json({ data });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
 

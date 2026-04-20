@@ -144,6 +144,8 @@ const mongoose = require("mongoose");
 const session = require('express-session');
 const cookieParser = require("cookie-parser");
 const path = require('path');
+const cron = require("node-cron");
+
 
 // Importing routes
 const customerRoutes = require("./Routes/route.customer");
@@ -153,6 +155,7 @@ const hotelRoutes = require('./Routes/hotelRoutes');
 const roomRoutes = require('./Routes/roomRoutes');
 const primaryGuestRoutes = require('./Routes/primaryGuest.route'); // Ensure correct path
 const roomStatusRoutes = require('./Routes/roomStatusRoutes');
+const activateAdvanceBookings = require("./corn/advanceBookingCron");
 
 
 // Initialize express app
@@ -166,7 +169,7 @@ app.use(cookieParser());
 // Define CORS options
 const corsOptions = {
   // origin: ["http://localhost:3000", "http://192.168.29.68:3000"],
-  origin: ["https://hms.automactechnologies.in","http://192.168.29.68:3000","http://localhost:3000",'https://master.d1tnw9s4t31jbx.amplifyapp.com'],
+  origin: ["https://hms.automactechnologies.in","http://192.168.29.68:3000","http://localhost:3000",'https://master.d1tnw9s4t31jbx.amplifyapp.com','https://hmsbackend.automactechnologies.in/'],
   // origin:["http://192.168.1.6:3000","http://192.168.137.1:3000","http://192.168.1.7:3000","http://localhost:3000"],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
@@ -201,6 +204,13 @@ app.get("*", (req, res) => {
     res.send("Backend server is running!");
 
 }); 
+
+// 👉 ADD HERE
+cron.schedule("1 0 * * *", () => {
+  console.log("⏰ Running advance booking cron job...");
+  activateAdvanceBookings();
+});
+
 
 // Connect to MongoDB and start the server
 mongoose
